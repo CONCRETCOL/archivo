@@ -1878,7 +1878,7 @@ function resetearDatos() {
   renderUsuarios();
 }
 
-
+function doLogout() {
   if (!session) return;
   audit('LOGOUT', 'AUTH', 'Sesión cerrada');
   session = null;
