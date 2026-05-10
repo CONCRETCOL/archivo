@@ -824,6 +824,7 @@
           <div class="page-title">Gestión de Usuarios</div>
           <div class="page-subtitle">Administración de accesos y permisos</div>
         </div>
+        <button class="btn btn-danger btn-sm" onclick="resetearDatos()" title="Carga los datos reales de Concretcol (materias primas y productos). Solo usar si el sistema tiene datos de demostración.">⚠ Recargar Datos Concretcol</button>
       </div>
       <div class="table-wrap">
         <div class="table-header"><div class="table-title">Usuarios del Sistema</div></div>
@@ -989,20 +990,16 @@
         <select id="p-producto"></select>
       </div>
       <div class="form-group">
-        <label>Cantidad Producida</label>
-        <input type="number" id="p-cantidad" min="1" step="1" placeholder="0">
+        <label>Cantidad Producida (kg)</label>
+        <input type="number" id="p-cantidad" min="0.01" step="0.01" placeholder="0">
       </div>
-      <div class="form-group">
-        <label>Materia Prima Consumida</label>
-        <select id="p-materia"></select>
-      </div>
-      <div class="form-group">
-        <label>Cantidad Materia Prima Usada</label>
-        <input type="number" id="p-materia-cant" min="0" step="0.01" placeholder="0">
-      </div>
-      <div class="form-group">
+      <div id="formulacion-preview"></div>
+      <div class="form-group" style="margin-top:12px">
         <label>Notas de Producción</label>
         <textarea id="p-notas" placeholder="Observaciones..."></textarea>
+      </div>
+      <div class="alert alert-warn" style="margin-top:8px;font-size:0.78rem">
+        ⚡ Las materias primas se descontarán <strong>automáticamente</strong> del inventario según la formulación del producto.
       </div>
     </div>
     <div class="modal-footer">
@@ -1191,7 +1188,6 @@ function initData() {
   const existing = loadData();
   if (existing && existing.initialized) return;
 
-  // Hash de contraseñas (simulado con base64+salt para entorno cliente)
   const data = {
     initialized: true,
     users: [
@@ -1200,14 +1196,497 @@ function initData() {
       { id: 'u3', username: 'despachos',  name: 'Diana Despachos',  role: 'despachos',  pwHash: hashPw('Despachos2024!'), active: true, lastLogin: null, forceChange: false },
       { id: 'u4', username: 'admin',      name: 'Admin Sistema',    role: 'admin',      pwHash: hashPw('Admin2024!'), active: true, lastLogin: null, forceChange: false },
     ],
+    // ── 74 MATERIAS PRIMAS — CONCRETCOL SAS ──
     materias: [
-      { id: 'mp1', codigo: 'MP-001', nombre: 'Acero Inoxidable', categoria: 'Metales', unidad: 'kg', stock: 500, minimo: 100 },
-      { id: 'mp2', codigo: 'MP-002', nombre: 'Resina Epóxica',   categoria: 'Químicos', unidad: 'lt', stock: 200, minimo: 50 },
-      { id: 'mp3', codigo: 'MP-003', nombre: 'Pigmento Azul',    categoria: 'Colorantes', unidad: 'kg', stock: 30, minimo: 20 },
+      { id: 'mp01',  codigo: 'MP-001',  nombre: 'Aditivo G2A',                      categoria: 'Aditivos',     unidad: 'Unidad', stock: 0, minimo: 20 },
+      { id: 'mp02',  codigo: 'MP-002',  nombre: 'Aditivo G5A',                      categoria: 'Aditivos',     unidad: 'Unidad', stock: 0, minimo: 20 },
+      { id: 'mp03',  codigo: 'MP-003',  nombre: 'Aditivo G9A',                      categoria: 'Aditivos',     unidad: 'Unidad', stock: 0, minimo: 20 },
+      { id: 'mp04',  codigo: 'MP-004',  nombre: 'Aditivo N1-10',                    categoria: 'Aditivos',     unidad: 'Unidad', stock: 0, minimo: 10 },
+      { id: 'mp05',  codigo: 'MP-005',  nombre: 'Aditivo N1-5',                     categoria: 'Aditivos',     unidad: 'Unidad', stock: 0, minimo: 10 },
+      { id: 'mp06',  codigo: 'MP-006',  nombre: 'Aditivo V-1',                      categoria: 'Aditivos',     unidad: 'Unidad', stock: 0, minimo: 100 },
+      { id: 'mp07',  codigo: 'MP-007',  nombre: 'Aditivo X200NV',                   categoria: 'Aditivos',     unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp08',  codigo: 'MP-008',  nombre: 'Aditivo X25NV',                    categoria: 'Aditivos',     unidad: 'Unidad', stock: 0, minimo: 30 },
+      { id: 'mp09',  codigo: 'MP-009',  nombre: 'Aditivo X500NV',                   categoria: 'Aditivos',     unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp10',  codigo: 'MP-010',  nombre: 'Aditivo X50NV',                    categoria: 'Aditivos',     unidad: 'Unidad', stock: 0, minimo: 30 },
+      { id: 'mp11',  codigo: 'MP-011',  nombre: 'AMABA',                            categoria: 'Pigmentos',    unidad: 'kg',     stock: 0, minimo: 600 },
+      { id: 'mp12',  codigo: 'MP-012',  nombre: 'AMAMI',                            categoria: 'Pigmentos',    unidad: 'kg',     stock: 0, minimo: 300 },
+      { id: 'mp13',  codigo: 'MP-013',  nombre: 'AREEND',                           categoria: 'Áridos',       unidad: 'kg',     stock: 0, minimo: 10000 },
+      { id: 'mp14',  codigo: 'MP-014',  nombre: 'AREREV',                           categoria: 'Áridos',       unidad: 'kg',     stock: 0, minimo: 5000 },
+      { id: 'mp15',  codigo: 'MP-015',  nombre: 'ARIND',                            categoria: 'Áridos',       unidad: 'kg',     stock: 0, minimo: 5000 },
+      { id: 'mp16',  codigo: 'MP-016',  nombre: 'AZULCA',                           categoria: 'Pigmentos',    unidad: 'kg',     stock: 0, minimo: 25 },
+      { id: 'mp17',  codigo: 'MP-017',  nombre: 'BASEDES',                          categoria: 'Bases',        unidad: 'kg',     stock: 0, minimo: 50 },
+      { id: 'mp18',  codigo: 'MP-018',  nombre: 'BLANCO',                           categoria: 'Pigmentos',    unidad: 'kg',     stock: 0, minimo: 300 },
+      { id: 'mp19',  codigo: 'MP-019',  nombre: 'Bolsa Gris Concrete Industrial',   categoria: 'Empaques',     unidad: 'Unidad', stock: 0, minimo: 100 },
+      { id: 'mp20',  codigo: 'MP-020',  nombre: 'Bolsas azules Concrete Color',     categoria: 'Empaques',     unidad: 'Unidad', stock: 0, minimo: 6000 },
+      { id: 'mp21',  codigo: 'MP-021',  nombre: 'Bolsas Naranjas Concrete Integral',categoria: 'Empaques',     unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp22',  codigo: 'MP-022',  nombre: 'Bolsas Rojas Concrete Revestimiento',categoria:'Empaques',    unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp23',  codigo: 'MP-023',  nombre: 'Bolsas transparentes',             categoria: 'Empaques',     unidad: 'Unidad', stock: 0, minimo: 10 },
+      { id: 'mp24',  codigo: 'MP-024',  nombre: 'Bolsas Verdes 1CM Revestimiento',  categoria: 'Empaques',     unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp25',  codigo: 'MP-025',  nombre: 'Caneca POL1',                      categoria: 'Envases',      unidad: 'kg',     stock: 0, minimo: 20 },
+      { id: 'mp26',  codigo: 'MP-026',  nombre: 'Caneca POL2',                      categoria: 'Envases',      unidad: 'kg',     stock: 0, minimo: 10 },
+      { id: 'mp27',  codigo: 'MP-027',  nombre: 'CEBLA',                            categoria: 'Cementos',     unidad: 'kg',     stock: 0, minimo: 3000 },
+      { id: 'mp28',  codigo: 'MP-028',  nombre: 'CEMGRI',                           categoria: 'Cementos',     unidad: 'kg',     stock: 0, minimo: 4000 },
+      { id: 'mp29',  codigo: 'MP-029',  nombre: 'Cuñetes azules Sella Concrete',    categoria: 'Envases',      unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp30',  codigo: 'MP-030',  nombre: 'Cuñetes negros 10kg',              categoria: 'Envases',      unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp31',  codigo: 'MP-031',  nombre: 'Cuñetes negros 20kg',              categoria: 'Envases',      unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp32',  codigo: 'MP-032',  nombre: 'Cuñetes verdes Desmol Concrete',   categoria: 'Envases',      unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp33',  codigo: 'MP-033',  nombre: 'DISOL',                            categoria: 'Químicos',     unidad: 'kg',     stock: 0, minimo: 300 },
+      { id: 'mp34',  codigo: 'MP-034',  nombre: 'ECN',                              categoria: 'Químicos',     unidad: 'kg',     stock: 0, minimo: 30 },
+      { id: 'mp35',  codigo: 'MP-035',  nombre: 'ESPESO',                           categoria: 'Químicos',     unidad: 'kg',     stock: 0, minimo: 50 },
+      { id: 'mp36',  codigo: 'MP-036',  nombre: 'Etiqueta Barniz Poliuretano',      categoria: 'Etiquetas',    unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp37',  codigo: 'MP-037',  nombre: 'Etiqueta Curador Concretcol',      categoria: 'Etiquetas',    unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp38',  codigo: 'MP-038',  nombre: 'Etiqueta Micro Bicomponente',      categoria: 'Etiquetas',    unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp39',  codigo: 'MP-039',  nombre: 'Etiqueta Sella Concrete',          categoria: 'Etiquetas',    unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp40',  codigo: 'MP-040',  nombre: 'Etiqueta Sella Poliuretano',       categoria: 'Etiquetas',    unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp41',  codigo: 'MP-041',  nombre: 'Etiquta Retar Concrete',           categoria: 'Etiquetas',    unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp42',  codigo: 'MP-042',  nombre: 'Fibra B1',                         categoria: 'Fibras',       unidad: 'kg',     stock: 0, minimo: 400 },
+      { id: 'mp43',  codigo: 'MP-043',  nombre: 'Fibra B2',                         categoria: 'Fibras',       unidad: 'kg',     stock: 0, minimo: 800 },
+      { id: 'mp44',  codigo: 'MP-044',  nombre: 'Fragancia',                        categoria: 'Químicos',     unidad: 'kg',     stock: 0, minimo: 50 },
+      { id: 'mp45',  codigo: 'MP-045',  nombre: 'Fungicida agua',                   categoria: 'Químicos',     unidad: 'kg',     stock: 0, minimo: 50 },
+      { id: 'mp46',  codigo: 'MP-046',  nombre: 'Garrafas 10 litros blancas',       categoria: 'Envases',      unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp47',  codigo: 'MP-047',  nombre: 'Garrafas 20 litros blancas',       categoria: 'Envases',      unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp48',  codigo: 'MP-048',  nombre: 'Garrafas 5 litros blancas',        categoria: 'Envases',      unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp49',  codigo: 'MP-049',  nombre: 'Garrafas azules 20kg',             categoria: 'Envases',      unidad: 'Unidad', stock: 0, minimo: 20 },
+      { id: 'mp50',  codigo: 'MP-050',  nombre: 'Garrafas Negras 20kg',             categoria: 'Envases',      unidad: 'Unidad', stock: 0, minimo: 10 },
+      { id: 'mp51',  codigo: 'MP-051',  nombre: 'HB',                               categoria: 'Químicos',     unidad: 'kg',     stock: 0, minimo: 5 },
+      { id: 'mp52',  codigo: 'MP-052',  nombre: 'IBK2',                             categoria: 'Químicos',     unidad: 'Unidad', stock: 0, minimo: 10 },
+      { id: 'mp53',  codigo: 'MP-053',  nombre: 'L80',                              categoria: 'Químicos',     unidad: 'kg',     stock: 0, minimo: 50 },
+      { id: 'mp54',  codigo: 'MP-054',  nombre: 'Líquido',                          categoria: 'Químicos',     unidad: 'kg',     stock: 0, minimo: 2000 },
+      { id: 'mp55',  codigo: 'MP-055',  nombre: 'Manteca',                          categoria: 'Químicos',     unidad: 'kg',     stock: 0, minimo: 50 },
+      { id: 'mp56',  codigo: 'MP-056',  nombre: 'Matiz',                            categoria: 'Pigmentos',    unidad: 'kg',     stock: 0, minimo: 15 },
+      { id: 'mp57',  codigo: 'MP-057',  nombre: 'MCZ1',                             categoria: 'Químicos',     unidad: 'kg',     stock: 0, minimo: 20 },
+      { id: 'mp58',  codigo: 'MP-058',  nombre: 'NEGBA',                            categoria: 'Pigmentos',    unidad: 'kg',     stock: 0, minimo: 600 },
+      { id: 'mp59',  codigo: 'MP-059',  nombre: 'NEGMI',                            categoria: 'Pigmentos',    unidad: 'kg',     stock: 0, minimo: 300 },
+      { id: 'mp60',  codigo: 'MP-060',  nombre: 'Orilladores',                      categoria: 'Herramientas', unidad: 'Unidad', stock: 0, minimo: 10 },
+      { id: 'mp61',  codigo: 'MP-061',  nombre: 'Puro',                             categoria: 'Áridos',       unidad: 'kg',     stock: 0, minimo: 3000 },
+      { id: 'mp62',  codigo: 'MP-062',  nombre: 'Recipiente 1 litro blanco',        categoria: 'Envases',      unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp63',  codigo: 'MP-063',  nombre: 'Recipiento 1kg integral',          categoria: 'Envases',      unidad: 'Unidad', stock: 0, minimo: 50 },
+      { id: 'mp64',  codigo: 'MP-064',  nombre: 'RESIGARRAFA',                      categoria: 'Químicos',     unidad: 'kg',     stock: 0, minimo: 50 },
+      { id: 'mp65',  codigo: 'MP-065',  nombre: 'ROJBA',                            categoria: 'Pigmentos',    unidad: 'kg',     stock: 0, minimo: 600 },
+      { id: 'mp66',  codigo: 'MP-066',  nombre: 'ROJMI',                            categoria: 'Pigmentos',    unidad: 'kg',     stock: 0, minimo: 300 },
+      { id: 'mp67',  codigo: 'MP-067',  nombre: 'Silicona',                         categoria: 'Químicos',     unidad: 'kg',     stock: 0, minimo: 50 },
+      { id: 'mp68',  codigo: 'MP-068',  nombre: 'UF',                               categoria: 'Químicos',     unidad: 'kg',     stock: 0, minimo: 10 },
+      { id: 'mp69',  codigo: 'MP-069',  nombre: 'Varillas Delgadas',                categoria: 'Herramientas', unidad: 'Unidad', stock: 0, minimo: 10 },
+      { id: 'mp70',  codigo: 'MP-070',  nombre: 'Varillas medianas',                categoria: 'Herramientas', unidad: 'Unidad', stock: 0, minimo: 10 },
+      { id: 'mp71',  codigo: 'MP-071',  nombre: 'VERBA',                            categoria: 'Pigmentos',    unidad: 'kg',     stock: 0, minimo: 150 },
+      { id: 'mp72',  codigo: 'MP-072',  nombre: 'VERMI',                            categoria: 'Pigmentos',    unidad: 'kg',     stock: 0, minimo: 300 },
+      { id: 'mp73',  codigo: 'MP-073',  nombre: 'Vinipel Grande',                   categoria: 'Empaques',     unidad: 'm²',     stock: 0, minimo: 100 },
+      { id: 'mp74',  codigo: 'MP-074',  nombre: 'Vinipel Pequeño',                  categoria: 'Empaques',     unidad: 'Unidad', stock: 0, minimo: 50 },
     ],
+    // ── PRODUCTOS TERMINADOS ConCol C-101 a C-152 ──
     productos: [
-      { id: 'pt1', codigo: 'PT-001', nombre: 'Pieza A-100', categoria: 'Mecánica', unidad: 'unidad', stock: 150, minimo: 20, precio: 45.00 },
-      { id: 'pt2', codigo: 'PT-002', nombre: 'Pieza B-200', categoria: 'Mecánica', unidad: 'unidad', stock: 80,  minimo: 15, precio: 78.50 },
+      { id: 'pt101', codigo: 'C-101', nombre: 'ConCol C-101', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt102', codigo: 'C-102', nombre: 'ConCol C-102', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt103', codigo: 'C-103', nombre: 'ConCol C-103', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt104', codigo: 'C-104', nombre: 'ConCol C-104', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt105', codigo: 'C-105', nombre: 'ConCol C-105', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt106', codigo: 'C-106', nombre: 'ConCol C-106', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt107', codigo: 'C-107', nombre: 'ConCol C-107', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt108', codigo: 'C-108', nombre: 'ConCol C-108', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt109', codigo: 'C-109', nombre: 'ConCol C-109', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt110', codigo: 'C-110', nombre: 'ConCol C-110', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt111', codigo: 'C-111', nombre: 'ConCol C-111', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt112', codigo: 'C-112', nombre: 'ConCol C-112', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt113', codigo: 'C-113', nombre: 'ConCol C-113', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt114', codigo: 'C-114', nombre: 'ConCol C-114', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt115', codigo: 'C-115', nombre: 'ConCol C-115', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt116', codigo: 'C-116', nombre: 'ConCol C-116', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt117', codigo: 'C-117', nombre: 'ConCol C-117', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt118', codigo: 'C-118', nombre: 'ConCol C-118', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt119', codigo: 'C-119', nombre: 'ConCol C-119', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt120', codigo: 'C-120', nombre: 'ConCol C-120', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt121', codigo: 'C-121', nombre: 'ConCol C-121', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt122', codigo: 'C-122', nombre: 'ConCol C-122', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt123', codigo: 'C-123', nombre: 'ConCol C-123', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt124', codigo: 'C-124', nombre: 'ConCol C-124', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt125', codigo: 'C-125', nombre: 'ConCol C-125', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt126', codigo: 'C-126', nombre: 'ConCol C-126', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt127', codigo: 'C-127', nombre: 'ConCol C-127', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt128', codigo: 'C-128', nombre: 'ConCol C-128', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt129', codigo: 'C-129', nombre: 'ConCol C-129', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt130', codigo: 'C-130', nombre: 'ConCol C-130', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt131', codigo: 'C-131', nombre: 'ConCol C-131', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt132', codigo: 'C-132', nombre: 'ConCol C-132', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt133', codigo: 'C-133', nombre: 'ConCol C-133', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt134', codigo: 'C-134', nombre: 'ConCol C-134', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt135', codigo: 'C-135', nombre: 'ConCol C-135', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt136', codigo: 'C-136', nombre: 'ConCol C-136', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt137', codigo: 'C-137', nombre: 'ConCol C-137', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt138', codigo: 'C-138', nombre: 'ConCol C-138', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt139', codigo: 'C-139', nombre: 'ConCol C-139', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt140', codigo: 'C-140', nombre: 'ConCol C-140', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt141', codigo: 'C-141', nombre: 'ConCol C-141', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt142', codigo: 'C-142', nombre: 'ConCol C-142', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt143', codigo: 'C-143', nombre: 'ConCol C-143', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt144', codigo: 'C-144', nombre: 'ConCol C-144', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt145', codigo: 'C-145', nombre: 'ConCol C-145', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt146', codigo: 'C-146', nombre: 'ConCol C-146', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt147', codigo: 'C-147', nombre: 'ConCol C-147', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt148', codigo: 'C-148', nombre: 'ConCol C-148', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt149', codigo: 'C-149', nombre: 'ConCol C-149', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt150', codigo: 'C-150', nombre: 'ConCol C-150', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt151', codigo: 'C-151', nombre: 'ConCol C-151', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+      { id: 'pt152', codigo: 'C-152', nombre: 'ConCol C-152', categoria: 'Concrete Color', unidad: 'kg', stock: 0, minimo: 5, precio: 0 },
+    ],
+    // ── FORMULACIONES: cantidad de MP por cada 25 kg de producto ──
+    // Formato: { productoNombre, mpNombre, cantidad, unidad, cantidadProduce }
+    formulaciones: [
+      // C-101
+      {prod:'ConCol C-101',mp:'CEBLA',cant:6.9,uni:'kg',base:25},
+      {prod:'ConCol C-101',mp:'CEMGRI',cant:0.37,uni:'kg',base:25},
+      {prod:'ConCol C-101',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-101',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-101',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-101',mp:'BLANCO',cant:0.107,uni:'kg',base:25},
+      // C-102
+      {prod:'ConCol C-102',mp:'CEBLA',cant:5.3,uni:'kg',base:25},
+      {prod:'ConCol C-102',mp:'CEMGRI',cant:1.95,uni:'kg',base:25},
+      {prod:'ConCol C-102',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-102',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-102',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-102',mp:'BLANCO',cant:0.107,uni:'kg',base:25},
+      // C-103
+      {prod:'ConCol C-103',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-103',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-103',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-103',mp:'AREEND',cant:14,uni:'kg',base:25},
+      // C-104
+      {prod:'ConCol C-104',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-104',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-104',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-104',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-104',mp:'NEGMI',cant:0.107,uni:'kg',base:25},
+      // C-105
+      {prod:'ConCol C-105',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-105',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-105',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-105',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-105',mp:'NEGMI',cant:0.645,uni:'kg',base:25},
+      // C-106
+      {prod:'ConCol C-106',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-106',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-106',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-106',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-106',mp:'AMABA',cant:0.05,uni:'kg',base:25},
+      {prod:'ConCol C-106',mp:'ROJBA',cant:0.008,uni:'kg',base:25},
+      {prod:'ConCol C-106',mp:'NEGBA',cant:0.008,uni:'kg',base:25},
+      // C-107
+      {prod:'ConCol C-107',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-107',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-107',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-107',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-107',mp:'AMABA',cant:0.025,uni:'kg',base:25},
+      {prod:'ConCol C-107',mp:'ROJBA',cant:0.008,uni:'kg',base:25},
+      // C-108
+      {prod:'ConCol C-108',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-108',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-108',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-108',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-108',mp:'AMABA',cant:0.025,uni:'kg',base:25},
+      // C-109
+      {prod:'ConCol C-109',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-109',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-109',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-109',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-109',mp:'AMABA',cant:0.033,uni:'kg',base:25},
+      {prod:'ConCol C-109',mp:'NEGBA',cant:0.008,uni:'kg',base:25},
+      // C-110
+      {prod:'ConCol C-110',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-110',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-110',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-110',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-110',mp:'AMAMI',cant:0.107,uni:'kg',base:25},
+      {prod:'ConCol C-110',mp:'NEGMI',cant:0.025,uni:'kg',base:25},
+      // C-111
+      {prod:'ConCol C-111',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-111',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-111',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-111',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-111',mp:'AMABA',cant:0.075,uni:'kg',base:25},
+      {prod:'ConCol C-111',mp:'NEGBA',cant:0.008,uni:'kg',base:25},
+      // C-112
+      {prod:'ConCol C-112',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-112',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-112',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-112',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-112',mp:'AMABA',cant:0.215,uni:'kg',base:25},
+      // C-113
+      {prod:'ConCol C-113',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-113',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-113',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-113',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-113',mp:'AMABA',cant:0.537,uni:'kg',base:25},
+      // C-114
+      {prod:'ConCol C-114',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-114',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-114',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-114',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-114',mp:'AMABA',cant:0.322,uni:'kg',base:25},
+      {prod:'ConCol C-114',mp:'VERBA',cant:0.107,uni:'kg',base:25},
+      // C-115
+      {prod:'ConCol C-115',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-115',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-115',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-115',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-115',mp:'AMABA',cant:0.645,uni:'kg',base:25},
+      // C-116
+      {prod:'ConCol C-116',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-116',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-116',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-116',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-116',mp:'AMABA',cant:0.591,uni:'kg',base:25},
+      {prod:'ConCol C-116',mp:'ROJBA',cant:0.061,uni:'kg',base:25},
+      // C-117
+      {prod:'ConCol C-117',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-117',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-117',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-117',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-117',mp:'AMABA',cant:0.066,uni:'kg',base:25},
+      {prod:'ConCol C-117',mp:'ROJBA',cant:0.016,uni:'kg',base:25},
+      {prod:'ConCol C-117',mp:'NEGBA',cant:0.008,uni:'kg',base:25},
+      // C-118
+      {prod:'ConCol C-118',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-118',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-118',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-118',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-118',mp:'AMABA',cant:0.215,uni:'kg',base:25},
+      {prod:'ConCol C-118',mp:'NEGBA',cant:0.107,uni:'kg',base:25},
+      // C-119
+      {prod:'ConCol C-119',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-119',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-119',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-119',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-119',mp:'AMABA',cant:0.43,uni:'kg',base:25},
+      {prod:'ConCol C-119',mp:'NEGBA',cant:0.107,uni:'kg',base:25},
+      // C-120
+      {prod:'ConCol C-120',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-120',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-120',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-120',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-120',mp:'AMABA',cant:0.43,uni:'kg',base:25},
+      {prod:'ConCol C-120',mp:'ROJBA',cant:0.041,uni:'kg',base:25},
+      {prod:'ConCol C-120',mp:'NEGBA',cant:0.215,uni:'kg',base:25},
+      // C-121
+      {prod:'ConCol C-121',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-121',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-121',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-121',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-121',mp:'AMABA',cant:0.107,uni:'kg',base:25},
+      {prod:'ConCol C-121',mp:'ROJBA',cant:0.033,uni:'kg',base:25},
+      {prod:'ConCol C-121',mp:'NEGBA',cant:0.008,uni:'kg',base:25},
+      // C-122
+      {prod:'ConCol C-122',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-122',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-122',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-122',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-122',mp:'AMABA',cant:0.43,uni:'kg',base:25},
+      {prod:'ConCol C-122',mp:'ROJBA',cant:0.083,uni:'kg',base:25},
+      {prod:'ConCol C-122',mp:'NEGBA',cant:0.083,uni:'kg',base:25},
+      // C-123
+      {prod:'ConCol C-123',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-123',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-123',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-123',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-123',mp:'AMABA',cant:0.315,uni:'kg',base:25},
+      {prod:'ConCol C-123',mp:'ROJBA',cant:0.166,uni:'kg',base:25},
+      {prod:'ConCol C-123',mp:'NEGBA',cant:0.1,uni:'kg',base:25},
+      // C-124
+      {prod:'ConCol C-124',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-124',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-124',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-124',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-124',mp:'AMABA',cant:0.25,uni:'kg',base:25},
+      {prod:'ConCol C-124',mp:'ROJBA',cant:0.083,uni:'kg',base:25},
+      {prod:'ConCol C-124',mp:'NEGBA',cant:0.416,uni:'kg',base:25},
+      // C-125
+      {prod:'ConCol C-125',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-125',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-125',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-125',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-125',mp:'ROJBA',cant:0.107,uni:'kg',base:25},
+      {prod:'ConCol C-125',mp:'NEGBA',cant:0.537,uni:'kg',base:25},
+      // C-126
+      {prod:'ConCol C-126',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-126',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-126',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-126',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-126',mp:'AMABA',cant:0.537,uni:'kg',base:25},
+      {prod:'ConCol C-126',mp:'ROJBA',cant:0.107,uni:'kg',base:25},
+      // C-127
+      {prod:'ConCol C-127',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-127',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-127',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-127',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-127',mp:'AMABA',cant:0.125,uni:'kg',base:25},
+      {prod:'ConCol C-127',mp:'ROJBA',cant:0.058,uni:'kg',base:25},
+      {prod:'ConCol C-127',mp:'NEGBA',cant:0.025,uni:'kg',base:25},
+      // C-128
+      {prod:'ConCol C-128',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-128',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-128',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-128',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-128',mp:'AMABA',cant:0.43,uni:'kg',base:25},
+      {prod:'ConCol C-128',mp:'ROJBA',cant:0.107,uni:'kg',base:25},
+      // C-129
+      {prod:'ConCol C-129',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-129',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-129',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-129',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-129',mp:'AMABA',cant:0.215,uni:'kg',base:25},
+      {prod:'ConCol C-129',mp:'ROJBA',cant:0.107,uni:'kg',base:25},
+      // C-130
+      {prod:'ConCol C-130',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-130',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-130',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-130',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-130',mp:'AMABA',cant:0.322,uni:'kg',base:25},
+      {prod:'ConCol C-130',mp:'ROJBA',cant:0.322,uni:'kg',base:25},
+      // C-131
+      {prod:'ConCol C-131',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-131',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-131',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-131',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-131',mp:'AMABA',cant:0.43,uni:'kg',base:25},
+      {prod:'ConCol C-131',mp:'ROJBA',cant:0.107,uni:'kg',base:25},
+      {prod:'ConCol C-131',mp:'NEGBA',cant:0.107,uni:'kg',base:25},
+      // C-132
+      {prod:'ConCol C-132',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-132',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-132',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-132',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-132',mp:'ROJBA',cant:0.066,uni:'kg',base:25},
+      {prod:'ConCol C-132',mp:'NEGBA',cant:0.008,uni:'kg',base:25},
+      // C-133
+      {prod:'ConCol C-133',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-133',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-133',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-133',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-133',mp:'ROJBA',cant:0.025,uni:'kg',base:25},
+      // C-134
+      {prod:'ConCol C-134',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-134',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-134',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-134',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-134',mp:'ROJMI',cant:0.15,uni:'kg',base:25},
+      // C-135
+      {prod:'ConCol C-135',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-135',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-135',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-135',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-135',mp:'ROJBA',cant:0.322,uni:'kg',base:25},
+      // C-136
+      {prod:'ConCol C-136',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-136',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-136',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-136',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-136',mp:'ROJBA',cant:0.645,uni:'kg',base:25},
+      // C-137
+      {prod:'ConCol C-137',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-137',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-137',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-137',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-137',mp:'ROJBA',cant:0.065,uni:'kg',base:25},
+      {prod:'ConCol C-137',mp:'NEGBA',cant:0.01,uni:'kg',base:25},
+      // C-138
+      {prod:'ConCol C-138',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-138',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-138',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-138',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-138',mp:'AMABA',cant:0.141,uni:'kg',base:25},
+      {prod:'ConCol C-138',mp:'ROJBA',cant:0.216,uni:'kg',base:25},
+      // C-139
+      {prod:'ConCol C-139',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-139',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-139',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-139',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-139',mp:'ROJBA',cant:0.215,uni:'kg',base:25},
+      {prod:'ConCol C-139',mp:'NEGBA',cant:0.107,uni:'kg',base:25},
+      // C-140
+      {prod:'ConCol C-140',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-140',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-140',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-140',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-140',mp:'ROJBA',cant:0.537,uni:'kg',base:25},
+      // C-141
+      {prod:'ConCol C-141',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-141',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-141',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-141',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-141',mp:'ROJBA',cant:0.325,uni:'kg',base:25},
+      {prod:'ConCol C-141',mp:'NEGBA',cant:0.325,uni:'kg',base:25},
+      // C-142
+      {prod:'ConCol C-142',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-142',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-142',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-142',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-142',mp:'VERBA',cant:0.107,uni:'kg',base:25},
+      // C-143
+      {prod:'ConCol C-143',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-143',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-143',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-143',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-143',mp:'VERBA',cant:0.537,uni:'kg',base:25},
+      // C-144
+      {prod:'ConCol C-144',mp:'CEMGRI',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-144',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-144',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-144',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-144',mp:'VERBA',cant:0.537,uni:'kg',base:25},
+      // C-145
+      {prod:'ConCol C-145',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-145',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-145',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-145',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-145',mp:'AMABA',cant:0.322,uni:'kg',base:25},
+      {prod:'ConCol C-145',mp:'VERBA',cant:0.322,uni:'kg',base:25},
+      // C-146
+      {prod:'ConCol C-146',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-146',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-146',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-146',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-146',mp:'AMABA',cant:0.322,uni:'kg',base:25},
+      {prod:'ConCol C-146',mp:'VERBA',cant:0.107,uni:'kg',base:25},
+      // C-147
+      {prod:'ConCol C-147',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-147',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-147',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-147',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-147',mp:'AZULCA',cant:0.215,uni:'kg',base:25},
+      // C-148
+      {prod:'ConCol C-148',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-148',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-148',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-148',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-148',mp:'AZULCA',cant:0.537,uni:'kg',base:25},
+      // C-149
+      {prod:'ConCol C-149',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-149',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-149',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-149',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-149',mp:'AZULCA',cant:0.325,uni:'kg',base:25},
+      {prod:'ConCol C-149',mp:'VERBA',cant:0.11,uni:'kg',base:25},
+      // C-150
+      {prod:'ConCol C-150',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-150',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-150',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-150',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-150',mp:'AZULCA',cant:0.525,uni:'kg',base:25},
+      {prod:'ConCol C-150',mp:'NEGBA',cant:0.025,uni:'kg',base:25},
+      // C-151
+      {prod:'ConCol C-151',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-151',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-151',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-151',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-151',mp:'AMABA',cant:0.065,uni:'kg',base:25},
+      {prod:'ConCol C-151',mp:'ROJBA',cant:0.008,uni:'kg',base:25},
+      {prod:'ConCol C-151',mp:'NEGBA',cant:0.031,uni:'kg',base:25},
+      // C-152
+      {prod:'ConCol C-152',mp:'CEBLA',cant:7.25,uni:'kg',base:25},
+      {prod:'ConCol C-152',mp:'Puro',cant:3.1,uni:'kg',base:25},
+      {prod:'ConCol C-152',mp:'Aditivo X25NV',cant:1,uni:'Unidad',base:25},
+      {prod:'ConCol C-152',mp:'AREEND',cant:14,uni:'kg',base:25},
+      {prod:'ConCol C-152',mp:'AZULCA',cant:0.633,uni:'kg',base:25},
+      {prod:'ConCol C-152',mp:'ROJBA',cant:0.25,uni:'kg',base:25},
     ],
     compras: [],
     produccion: [],
@@ -1217,6 +1696,18 @@ function initData() {
     lockouts: {},
   };
   saveData(data);
+}
+
+// ── HELPER: obtener formulación de un producto ──
+// Retorna [{mpNombre, cantidad_ajustada, unidad}] escalado a cantidadKg producida
+function getFormulacion(productoNombre, cantidadKg) {
+  const d = getData();
+  const fmls = (d.formulaciones || []).filter(f => f.prod === productoNombre);
+  return fmls.map(f => ({
+    mpNombre: f.mp,
+    cantidad: parseFloat(((f.cant / f.base) * cantidadKg).toFixed(6)),
+    unidad: f.uni,
+  }));
 }
 
 // ── PERSISTENCIA ──
@@ -1363,7 +1854,31 @@ function unlockSession() {
   resetInactivityTimer();
 }
 
-function doLogout() {
+// ── RESET DATOS (migración de datos demo a datos reales) ──
+function resetearDatos() {
+  if (!confirm('⚠️ Esto reemplazará el catálogo de materias primas y productos con los datos reales de Concretcol SAS.\n\n¿Los movimientos (compras, producciones, despachos) se conservarán.\n\n¿Continuar?')) return;
+  const d = getData();
+  // Forzar reinicialización solo de catálogos
+  d.initialized = false;
+  saveData(d);
+  // Re-inicializar preservando movimientos y usuarios
+  const movs = { compras: d.compras||[], produccion: d.produccion||[], despachos: d.despachos||[], auditoria: d.auditoria||[], loginAttempts: d.loginAttempts||{}, lockouts: d.lockouts||{}, users: d.users||[] };
+  initData();
+  const newD = getData();
+  newD.compras = movs.compras;
+  newD.produccion = movs.produccion;
+  newD.despachos = movs.despachos;
+  newD.auditoria = movs.auditoria;
+  newD.loginAttempts = movs.loginAttempts;
+  newD.lockouts = movs.lockouts;
+  newD.users = movs.users;
+  saveData(newD);
+  audit('RESET_DATOS', 'Admin', 'Catálogos de materias primas y productos actualizados a datos Concretcol');
+  showToast('✓ Datos de Concretcol cargados correctamente. 74 materias primas y 52 productos.', 'success');
+  renderUsuarios();
+}
+
+
   if (!session) return;
   audit('LOGOUT', 'AUTH', 'Sesión cerrada');
   session = null;
@@ -1695,13 +2210,16 @@ function deleteMateria(id) {
 function renderProduccion() {
   const d = getData();
   const prods = d.productos || [];
-  const mats  = d.materias || [];
 
-  // Selects del modal
+  // Solo select de producto (las MP se calculan automáticamente)
   const selProd = document.getElementById('p-producto');
-  const selMat  = document.getElementById('p-materia');
   if (selProd) selProd.innerHTML = prods.map(p => `<option value="${s(p.id)}">${s(p.codigo)} — ${s(p.nombre)}</option>`).join('');
-  if (selMat)  selMat.innerHTML  = mats.map(m => `<option value="${s(m.id)}">${s(m.codigo)} — ${s(m.nombre)}</option>`).join('');
+
+  // Actualizar previsualización de formulación al cambiar selección
+  const cantEl = document.getElementById('p-cantidad');
+  if (selProd) selProd.onchange = actualizarPreviewFormulacion;
+  if (cantEl)  cantEl.oninput   = actualizarPreviewFormulacion;
+  actualizarPreviewFormulacion();
 
   const tbody = document.getElementById('tbody-produccion');
   const prodcs = (d.produccion || []).sort((a,b) => new Date(b.ts) - new Date(a.ts));
@@ -1711,26 +2229,51 @@ function renderProduccion() {
   }
   tbody.innerHTML = prodcs.map(p => {
     const prod = prods.find(x => x.id === p.productoId);
-    const mat  = mats.find(m => m.id === p.materiaId);
+    // Resumir MP consumidas
+    const mpResumen = (p.mpConsumidas || []).map(m => `${m.mpNombre} (${parseFloat(m.cantidad.toFixed(3))} ${m.unidad})`).join(', ');
     return `<tr>
       <td>${new Date(p.fecha+'T12:00:00').toLocaleDateString('es-CO')}</td>
       <td class="td-main mono">${s(p.orden)}</td>
       <td>${s(prod ? prod.nombre : p.productoId)}</td>
-      <td class="mono fw-6">${p.cantidad}</td>
-      <td class="text-dim">${s(mat ? mat.nombre : '—')} ${p.materiaCant ? '(-'+p.materiaCant+' '+s(mat?mat.unidad:'')+')'  : ''}</td>
+      <td class="mono fw-6">${p.cantidad} kg</td>
+      <td class="text-dim text-xs" style="max-width:260px;white-space:normal">${s(mpResumen || '—')}</td>
       <td class="text-dim text-sm">${s(p.by)}</td>
       <td><span class="badge badge-purple">✓ Completada</span></td>
     </tr>`;
   }).join('');
 }
 
+function actualizarPreviewFormulacion() {
+  const selProd = document.getElementById('p-producto');
+  const cantEl  = document.getElementById('p-cantidad');
+  const preview = document.getElementById('formulacion-preview');
+  if (!selProd || !preview) return;
+  const d = getData();
+  const prod = (d.productos || []).find(p => p.id === selProd.value);
+  if (!prod) { preview.innerHTML = ''; return; }
+  const cantidad = parseFloat(cantEl ? cantEl.value : 0) || 0;
+  const fml = getFormulacion(prod.nombre, cantidad || 25);
+  if (!fml.length) { preview.innerHTML = '<div class="text-dim text-xs" style="padding:8px 0">Sin formulación registrada para este producto.</div>'; return; }
+  preview.innerHTML = `<div style="background:var(--bg);border:1px solid var(--border-strong);border-radius:var(--r);padding:12px;margin-top:8px;">
+    <div class="text-xs fw-6" style="color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;">
+      🧪 Materias primas que se descontarán automáticamente${cantidad ? ' para '+cantidad+' kg' : ' (por 25 kg base)'}:
+    </div>
+    ${fml.map(f => {
+      const mat = (d.materias||[]).find(m => m.nombre === f.mpNombre || m.nombre.toUpperCase() === f.mpNombre.toUpperCase());
+      const stockOk = mat ? mat.stock >= f.cantidad : false;
+      return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:0.78rem;">
+        <span style="color:${stockOk||!mat?'var(--text)':'var(--danger)'}">${s(f.mpNombre)}</span>
+        <span class="mono" style="color:${stockOk||!mat?'var(--accent)':'var(--danger)'}">-${parseFloat(f.cantidad.toFixed(4))} ${s(f.unidad)}${mat?' (disp: '+mat.stock+')':' ⚠ no encontrada'}</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
 function saveProduccion() {
   const orden = document.getElementById('p-orden').value.trim();
   const fecha = document.getElementById('p-fecha').value;
   const productoId = document.getElementById('p-producto').value;
-  const cantidad = parseInt(document.getElementById('p-cantidad').value);
-  const materiaId = document.getElementById('p-materia').value;
-  const materiaCant = parseFloat(document.getElementById('p-materia-cant').value) || 0;
+  const cantidad = parseFloat(document.getElementById('p-cantidad').value);
   const notas = document.getElementById('p-notas').value.trim();
 
   if (!orden || !fecha || !productoId || isNaN(cantidad) || cantidad <= 0) {
@@ -1739,29 +2282,55 @@ function saveProduccion() {
 
   const d = getData();
   const prod = (d.productos || []).find(p => p.id === productoId);
-  const mat  = (d.materias || []).find(m => m.id === materiaId);
-
   if (!prod) { showToast('Producto no encontrado.', 'error'); return; }
 
-  // Descontar materia prima si se indicó
-  if (mat && materiaCant > 0) {
-    if (mat.stock < materiaCant) {
-      showToast(`Stock insuficiente de ${mat.nombre}. Disponible: ${mat.stock} ${mat.unidad}`, 'warn'); return;
+  // Calcular consumo de materias primas según formulación
+  const fml = getFormulacion(prod.nombre, cantidad);
+
+  // Verificar stock de TODAS las MP antes de descontar
+  const faltantes = [];
+  fml.forEach(f => {
+    const mat = (d.materias || []).find(m =>
+      m.nombre === f.mpNombre ||
+      m.nombre.toUpperCase() === f.mpNombre.toUpperCase()
+    );
+    if (mat && mat.stock < f.cantidad) {
+      faltantes.push(`${f.mpNombre}: necesita ${parseFloat(f.cantidad.toFixed(3))} ${f.unidad}, hay ${mat.stock}`);
     }
-    mat.stock -= materiaCant;
+  });
+  if (faltantes.length > 0) {
+    showToast(`Stock insuficiente:\n${faltantes.join('\n')}`, 'warn');
+    return;
   }
 
-  // Sumar al stock de producto terminado
-  prod.stock = (prod.stock || 0) + cantidad;
+  // Descontar cada materia prima según formulación
+  const mpConsumidas = [];
+  fml.forEach(f => {
+    const mat = (d.materias || []).find(m =>
+      m.nombre === f.mpNombre ||
+      m.nombre.toUpperCase() === f.mpNombre.toUpperCase()
+    );
+    if (mat) {
+      mat.stock = parseFloat((mat.stock - f.cantidad).toFixed(6));
+      mpConsumidas.push({ mpNombre: f.mpNombre, cantidad: f.cantidad, unidad: f.unidad });
+    }
+  });
+
+  // Sumar al stock del producto terminado
+  prod.stock = parseFloat(((prod.stock || 0) + cantidad).toFixed(3));
 
   if (!d.produccion) d.produccion = [];
-  d.produccion.push({ id: uid(), orden, fecha, productoId, cantidad, materiaId, materiaCant, notas, by: session.username, ts: new Date().toISOString() });
+  d.produccion.push({
+    id: uid(), orden, fecha, productoId, cantidad,
+    mpConsumidas, notas, by: session.username, ts: new Date().toISOString()
+  });
   saveData(d);
 
-  audit('PRODUCCION', 'Producción', `${orden} · ${prod.nombre} · +${cantidad} unidades`);
+  const detMP = mpConsumidas.map(m => `${m.mpNombre}(-${parseFloat(m.cantidad.toFixed(3))} ${m.unidad})`).join(', ');
+  audit('PRODUCCION', 'Producción', `${orden} · ${prod.nombre} · +${cantidad} kg | MP: ${detMP}`);
   closeModal('modal-produccion');
-  clearForm(['p-orden','p-fecha','p-cantidad','p-materia-cant','p-notas']);
-  showToast(`Producción ${orden} registrada. +${cantidad} ${prod.unidad} de ${prod.nombre}`, 'success');
+  clearForm(['p-orden','p-fecha','p-cantidad','p-notas']);
+  showToast(`✓ Producción ${orden}: +${cantidad} kg de ${prod.nombre}. ${mpConsumidas.length} MP descontadas.`, 'success');
   renderProduccion();
 }
 
